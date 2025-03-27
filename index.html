@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý mua đồ</title>
+    <style>
+        table { border-collapse: collapse; width: 80%; margin: 20px auto; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background-color: #4CAF50; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        tr:nth-child(odd) { background-color: #ffffff; }
+        tr:hover { background-color: #ddd; }
+        .total { font-weight: bold; text-align: right; margin-right: 10%; }
+        button { padding: 5px 10px; cursor: pointer; background-color: #ff4444; color: white; border: none; }
+        button:hover { background-color: #cc0000; }
+        input { margin: 5px; padding: 5px; }
+    </style>
+</head>
+<body>
+    <h2 style="text-align: center;">Quản lý mua đồ</h2>
+    <div style="text-align: center;">
+        <input type="date" id="date">
+        <input type="text" id="content" placeholder="Nội dung">
+        <input type="number" id="amount" placeholder="Số tiền">
+        <button onclick="addItem()">Thêm</button>
+    </div>
+
+    <table id="shoppingTable">
+        <thead>
+            <tr>
+                <th>Ngày</th>
+                <th>Nội dung</th>
+                <th>Số tiền</th>
+                <th>Xóa</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+
+    <p class="total">Tổng cộng: <span id="totalAmount">0</span> VNĐ</p>
+    <div style="text-align: center;">
+        <button onclick="downloadExcel()">Tải dữ liệu về Excel</button>
+    </div>
+
+    <script>
+        const password = "12345"; // Mật khẩu để xóa
+        let items = JSON.parse(localStorage.getItem('shoppingItems')) || [];
+
+        // Load dữ liệu khi trang được tải
+        window.onload = function() {
+            renderTable();
+            calculateTotal();
+        };
+
+        function addItem() {
+            const date = document.getElementById('date').value;
+            const content = document.getElementById('content').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+
+            if (date && content && amount) {
+                items.push({ date, content, amount });
+                saveAndUpdate();
+                clearInputs();
+            } else {
+                alert("Vui lòng điền đầy đủ thông tin!");
+            }
+        }
+
+        function deleteItem(index) {
+            const userPassword = prompt("Nhập mật khẩu để xóa:");
+            if (userPassword === password) {
+                items.splice(index, 1);
+                saveAndUpdate();
+            } else {
+                alert("Mật khẩu sai!");
+            }
+        }
+
+        function renderTable() {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+            items.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.date}</td>
+                    <td>${item.content}</td>
+                    <td>${item.amount.toLocaleString()} VNĐ</td>
+                    <td><button onclick="deleteItem(${index})">Xóa</button></td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function calculateTotal() {
+            const total = items.reduce((sum, item) => sum + item.amount, 0);
+            document.getElementById('totalAmount').textContent = total.toLocaleString();
+        }
+
+        function saveAndUpdate() {
+            localStorage.setItem('shoppingItems', JSON.stringify(items));
+            renderTable();
+            calculateTotal();
+        }
+
+        function clearInputs() {
+            document.getElementById('date').value = '';
+            document.getElementById('content').value = '';
+            document.getElementById('amount').value = '';
+        }
+
+        function downloadExcel() {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Ngày,Nội dung,Số tiền\n";
+            items.forEach(item => {
+                const row = `${item.date},${item.content},${item.amount}`;
+                csvContent += row + "\n";
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "shopping_data.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
